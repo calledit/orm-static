@@ -310,7 +310,7 @@ function GenerateDBClasses($ClassTables, $MY_SQL_Handle){
 		//Fetch Column info
 		$Collumns = $MY_SQL_Handle->query("SHOW COLUMNS FROM ".$Table);
 		$CollumnArray = array();
-		while($Collumn = $query->fetch_assoc()){
+		while($Collumn = $Collumns->fetch_assoc()){
 			$CollumnArray[] = $Collumn;
 		}
 		$Collumns->free();
