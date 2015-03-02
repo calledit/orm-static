@@ -182,7 +182,7 @@ class DBObj {
 	}
 	
 	//Creates Where or a set sql string based on the input properties
-	public static function GenerateDBQuery($Values, $Question){
+	public static function GenerateDBQuery(array $Values, $Question){
 		global $MY_SQL_Handle;
 		$QueryValues = array();
 		$Joiner = ', ';
@@ -190,6 +190,10 @@ class DBObj {
 		if($Question){
 			$Joiner = ' && ';
 			$SqlType = 'WHERE';
+		}
+		
+		if(count($Values) == 0){
+			$SqlType = '';
 		}
 
 		foreach($Values AS $KeyName => $PropVal){
