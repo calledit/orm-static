@@ -57,6 +57,29 @@ class DBObj {
 		return($ListOfRows);
 	}
 	
+	//Draws a html table very usefull for debuging
+	public function HTMLTable(){
+		echo "\n<table class=\"table\">\n";
+		echo "	<thead>\n";
+		echo "		<tr>\n";
+
+		$Properies = get_class_vars(get_class($this));
+		unset($Properies['_tableName']);
+		foreach($Properies AS $PropName => $DefinedValue){
+				echo "<th>".$PropName."</th>";
+		}
+
+		echo "		</tr>\n";
+		echo "	</thead>\n";
+		echo "	<tbody>\n";
+		echo "		<tr>\n";
+		foreach($Properies AS $PropName => $DefinedValue){
+				echo "<td>".$this->$PropName."</td>";
+		}
+		echo "	</tbody>\n";
+		echo "</table>\n";
+	}
+	
 	//Fetches a list of objects from the databse based of some specified properties
 	public static function GetListByProperty($Properties){
 		global $MY_SQL_Handle;
