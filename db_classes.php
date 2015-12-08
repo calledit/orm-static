@@ -182,7 +182,7 @@ class DBObj {
 	}
 	
 	//Creates Where or a set sql string based on the input properties
-	public static function GenerateDBQuery($Values, $Question){
+	public static function GenerateDBQuery(array $Values, $Question){
 		global $MY_SQL_Handle;
 		$QueryValues = array();
 		$Joiner = ', ';
@@ -190,6 +190,10 @@ class DBObj {
 		if($Question){
 			$Joiner = ' && ';
 			$SqlType = 'WHERE';
+		}
+		
+		if(count($Values) == 0){
+			$SqlType = '';
 		}
 
 		foreach($Values AS $KeyName => $PropVal){
@@ -301,7 +305,17 @@ function DB_query($QueryStr){
 }
 
 //Generated classes based on tables in the databse
-function GenerateDBClasses($ClassTables, $MY_SQL_Handle){
+function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
+
+	//TO get References
+	$References = $MY_SQL_Handle->query('SELECT * FROM `information_schema`.`KEY_COLUMN_USAGE`
+	WHERE
+		`information_schema`.`KEY_COLUMN_USAGE`.`TABLE_SCHEMA` = "'.$DataBase.'" AND
+		`information_schema`.`KEY_COLUMN_USAGE`.`REFERENCED_TABLE_SCHEMA` IS NOT NULL');
+	while($Reference = $References->fetch_assoc()){
+		
+	}
+	$References->free();
 
 	$PHPCode = "<?php\n";
 	$ClassNames = array();
@@ -344,7 +358,7 @@ function GenerateDBClasses($ClassTables, $MY_SQL_Handle){
 }
 
 //takes all tables in the database and generates classes for them
-function SaveDBClassesToFile($FileName, $MY_SQL_Handle){
+function SaveDBClassesToFile($DataBase, $FileName, $MY_SQL_Handle){
 	$ClassTables = array();
 	$Tables = $MY_SQL_Handle->query("SHOW TABLES");
 	while(($ResultRow = $Tables->fetch_row())){
@@ -353,7 +367,7 @@ function SaveDBClassesToFile($FileName, $MY_SQL_Handle){
 	$Tables->free();
 
 	if(file_exists($FileName)){
-		$PHPCode = GenerateDBClasses($ClassTables, $MY_SQL_Handle);
+		$PHPCode = GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle);
 		file_put_contents($FileName, $PHPCode);
 	}
 }
