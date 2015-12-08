@@ -411,7 +411,7 @@ function DB_Abstraction_Get_Collumn($RuseultTable, $CollumName, $CollumKeyName =
 	return($ReturnArray);
 }
 
-function DB_implode_in($Column, $implodes, $DB = '', $WhenEmpty = false){
+function DB_implode_in($Column, $implodes, $WhenEmpty = false){
 	global $MY_SQL_Handle;
 	if(!isset($implodes) || count($implodes) == 0){
 		if($WhenEmpty){
@@ -424,10 +424,7 @@ function DB_implode_in($Column, $implodes, $DB = '', $WhenEmpty = false){
 		$implodes[$key] = DB_Esc($Value);
 	}
 
-	if($DB != ''){
-		$DB = '`'.$MY_SQL_Handle->real_escape_string($DB).'`.';
-	}
-	return($DB.'`'.$MY_SQL_Handle->real_escape_string($Column).'` IN ('.implode(', ', $implodes).')');
+	return($MY_SQL_Handle->real_escape_string($Column).' IN ('.implode(', ', $implodes).')');
 }
 
 ?>
