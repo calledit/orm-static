@@ -335,8 +335,28 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 	WHERE
 		`information_schema`.`KEY_COLUMN_USAGE`.`TABLE_SCHEMA` = "'.$DataBase.'" AND
 		`information_schema`.`KEY_COLUMN_USAGE`.`REFERENCED_TABLE_SCHEMA` IS NOT NULL');
+
+	$ReferencesTableCount = array();
 	while($Reference = $References->fetch_assoc()){
-		
+
+		$TableName = $Reference['TABLE_SCHEMA'].'/'.$Reference['TABLE_NAME'];
+		if(!isset($ReferencesTableCounts[$TableName])){
+			$ReferencesTableCounts[$TableName] = 0;
+		}
+		$ReferencesTableCounts[$TableName] += 1;
+
+		$RefTableName = $Reference['REFERENCED_TABLE_SCHEMA'].'/'.$Reference['REFERENCED_TABLE_NAME'];
+		if(!isset($ReferencesTableCounts[$RefTableName])){
+			$ReferencesTableCounts[$RefTableName] = 0;
+		}
+		$ReferencesTableCounts[$RefTableName] += 1;
+	}
+
+	//Main Columns only have one reference
+	foreach($ReferencesTableCounts AS $RefTableCount){
+		if($RefTableCount == 1){
+
+		}
 	}
 	$References->free();
 
