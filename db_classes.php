@@ -80,6 +80,15 @@ class DBObj {
 		echo "</table>\n";
 	}
 	
+	//tries to get single object if avalible
+	public static function GetObjByProperty($Properties){
+		$list = static::GetListByProperty($Properties);
+		if(count($list) > 0){
+			return array_shift($list);
+		}
+		return false;
+	}
+
 	//Fetches a list of objects from the databse based of some specified properties
 	public static function GetListByProperty($Properties){
 		global $MY_SQL_Handle;
