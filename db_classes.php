@@ -424,11 +424,77 @@ function SaveDBClassesToFile($DataBase, $FileName, $MY_SQL_Handle){
 	}
 }
 
-//Helper for pivoting results
+//Helper for pivoting Object results
+/*
+DB_Result_Pivot(
+	RuseultTable = array of objects to pivot,
+	CollumName = collumn to get value from, (if used with CollumKeyName: true means use the array key as the value, false means get the entire object as the value)
+	[CollumKeyName] = the collumn to use as a a key in the result array
+	[DuplicateValues] = get more one value for each key in the result array
+	
+	 if set to true, it will get the keys is the array
+)
+*/
+function DB_Result_Pivot($RuseultTable, $CollumName, $CollumKeyName = NULL, $DuplicateValues = false){
+	$ReturnArray = array();
+	if(!is_array($RuseultTable)){
+		throw new Exception('DB_Result_Pivot $RuseultTable is not an array');
+	}
+	if(isset($CollumKeyName)){
+		if($DuplicateValues){
+			if($CollumName === true){
+				foreach($RuseultTable AS $key => $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName][] = $key;
+				}
+			}else if($CollumName === false){
+				foreach($RuseultTable AS $key => $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName][] = $TableRow;
+				}
+			}else{
+				foreach($RuseultTable AS $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName][] = $TableRow->$CollumName;
+				}
+			}
+		}else{
+			if($CollumName === true){
+				foreach($RuseultTable AS $key => $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName] = $key;
+				}
+			}else if($CollumName === false){
+				foreach($RuseultTable AS $key => $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName] = $TableRow;
+				}
+			}else{
+				foreach($RuseultTable AS $TableRow){
+					$ReturnArray[$TableRow->$CollumKeyName] = $TableRow->$CollumName;
+				}
+			}
+		}
+	}else{
+		foreach($RuseultTable AS $TableRow){
+			$ReturnArray[] = $TableRow->$CollumName;
+		}
+	}
+	return($ReturnArray);
+}
+
+
+//Helper for pivoting arrays of arrays
+/*
+DB_Abstraction_Get_Collumn(
+	RuseultTable = array of arrays to pivot,
+	CollumName = collumn to get value from, (if used with CollumKeyName: true means use the array key as the value, false means get the entire row as the value)
+	[CollumKeyName] = the collumn to use as a a key in the result array
+	[DuplicateValues] = get more one value for each key in the result array
+	
+	 if set to true, it will get the keys is the array
+)
+*/
 function DB_Abstraction_Get_Collumn($RuseultTable, $CollumName, $CollumKeyName = NULL, $DuplicateValues = false){
 	$ReturnArray = array();
-	if(!is_array($RuseultTable))
+	if(!is_array($RuseultTable)){
 		throw new Exception('DB_Abstraction_Get_Collumn $RuseultTable is not an array');
+	}
 	if(isset($CollumKeyName)){
 		if($DuplicateValues){
 			if($CollumName === true){
@@ -446,19 +512,23 @@ function DB_Abstraction_Get_Collumn($RuseultTable, $CollumName, $CollumKeyName =
 			}
 		}else{
 			if($CollumName === true){
-				foreach($RuseultTable AS $key => $TableRow)
+				foreach($RuseultTable AS $key => $TableRow){
 					$ReturnArray[$TableRow[$CollumKeyName]] = $key;
+				}
 			}else if($CollumName === false){
-				foreach($RuseultTable AS $key => $TableRow)
+				foreach($RuseultTable AS $key => $TableRow){
 					$ReturnArray[$TableRow[$CollumKeyName]] = $TableRow;
+				}
 			}else{
-				foreach($RuseultTable AS $TableRow)
+				foreach($RuseultTable AS $TableRow){
 					$ReturnArray[$TableRow[$CollumKeyName]] = $TableRow[$CollumName];
+				}
 			}
 		}
 	}else{
-		foreach($RuseultTable AS $TableRow)
+		foreach($RuseultTable AS $TableRow){
 			$ReturnArray[] = $TableRow[$CollumName];
+		}
 	}
 	return($ReturnArray);
 }
