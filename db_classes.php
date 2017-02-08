@@ -597,4 +597,29 @@ function load_csv($file, $search_head = NULL){
 	return $data;
 }
 
+function Array_Table($arr){
+	if(count($arr) == 0){
+		throw new Exception("No values in array");
+	}
+	echo('<table border="1">');
+
+	//Print The Keys
+	$First = reset($arr);
+	echo("<tr>");
+	foreach($First[0] as $key => $val){
+		echo("<th>" . $key . "</th>");
+	}
+	echo("</tr>\n");
+
+	//Print all values
+	foreach($arr as $Collumn => $Collumn_val){
+		echo("<tr>");
+		foreach($Collumn_val as $key => $val){
+			echo("<td>" . $val . "</td>");
+		}
+		echo("</tr>\n");
+	}
+	echo('</table>');
+}
+
 ?>
