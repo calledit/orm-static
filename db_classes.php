@@ -606,7 +606,7 @@ function Array_Table($arr){
 	//Print The Keys
 	$First = reset($arr);
 	echo("<tr>");
-	foreach($First[0] as $key => $val){
+	foreach($First as $key => $val){
 		echo("<th>" . $key . "</th>");
 	}
 	echo("</tr>\n");
