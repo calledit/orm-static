@@ -622,4 +622,28 @@ function Array_Table($arr){
 	echo('</table>');
 }
 
+
+function simple_DB_query($QueryStr){
+	global $MY_SQL_Handle;
+	$Result = $MY_SQL_Handle->query($QueryStr);
+	if(!$Result){
+		throw new Exception("Data Base query Error: ".$MY_SQL_Handle->error);
+	}
+
+	//Map query result Columns to object fields
+	$CollumnMetas = $Result->fetch_fields();
+	$ColumnNames = array();
+	foreach($CollumnMetas AS $CollumnNum => $CollumnMeta){
+		$ColumnNames[$CollumnNum] = $CollumnMeta->table.'.'.$CollumnMeta->name;
+	}
+
+	$rows = array();
+	while(($ResultRow = $Result->fetch_row())){
+		$rows[] = array_combine($ColumnNames, $ResultRow);
+	}
+
+	$Result->free();
+	return($rows);
+}
+
 ?>
