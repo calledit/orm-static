@@ -646,4 +646,17 @@ function simple_DB_query($QueryStr){
 	return($rows);
 }
 
+//Selects certain columns from a db result set
+function DB_collumn_select($RuseultTable, $columns){
+	$ret = array();
+	foreach($RuseultTable AS $_id => $row){
+		$limRow = array();
+		foreach($columns AS $column){
+			$limRow[$column] = $row->$column;
+		}
+		$ret[$_id] = $limRow;
+	}
+	return $ret;
+}
+
 ?>
