@@ -549,50 +549,58 @@ function DB_implode_in($Column, $implodes, $WhenEmpty = false){
 	return($MY_SQL_Handle->real_escape_string($Column).' IN ('.implode(', ', $implodes).')');
 }
 
-function load_csv($file, $search_head = NULL){
+function load_csv($file, $search_head = NULL, $separator = ';'){
 	$data = array();
 	//parse the price list file
-	if (($handle = fopen($file, "r")) !== FALSE) {
-		$found_column_headers = false;
-		$headers = array();
-		while (($line = fgetcsv($handle, 0, ";")) !== FALSE) {
-			//Skip the first couple of useles lines and find the headers
-			if(!$found_column_headers){
-				$use_as_head = false;
-				if(isset($search_head)){
-					$num_matches = 0;
-					foreach($line AS $val){
-						$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
-						if(in_array($val, $search_head)){
-							$num_matches += 1;
-						}
+	$close = false;
+	if(is_string($file)){
+		if(($handle = fopen($file, "r")) !== FALSE){
+			$close = true;
+		}else{
+			throw Exception("Could not open csv file: $file\n");
+		}
+	}else{
+		$handle = $file;
+	}
+	$found_column_headers = false;
+	$headers = array();
+	while (($line = fgetcsv($handle, 0, $separator)) !== FALSE) {
+		//Skip the first couple of useles lines and find the headers
+		if(!$found_column_headers){
+			$use_as_head = false;
+			if(isset($search_head)){
+				$num_matches = 0;
+				foreach($line AS $val){
+					$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
+					if(in_array($val, $search_head)){
+						$num_matches += 1;
 					}
-					if(count($search_head) == $num_matches){
-						$use_as_head = true;
-					}
-				}else{
+				}
+				if(count($search_head) == $num_matches){
 					$use_as_head = true;
 				}
-
-				if($use_as_head){
-					$found_column_headers = true;
-					foreach($line AS $c => $val) {
-						$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
-						$headers[$val] = $c;
-					}
-				}
-			}else if($found_column_headers){//We found the headers lets start taking the data
-				$dline = array();
-				foreach($headers AS $name => $id){
-					$dline[$name] = $line[$headers[$name]];
-				}
-				$data[] = $dline;
+			}else{
+				$use_as_head = true;
 			}
+
+			if($use_as_head){
+				$found_column_headers = true;
+				foreach($line AS $c => $val) {
+					$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
+					$headers[$val] = $c;
+				}
+			}
+		}else if($found_column_headers){//We found the headers lets start taking the data
+			$dline = array();
+			foreach($headers AS $name => $id){
+				$dline[$name] = $line[$headers[$name]];
+			}
+			$data[] = $dline;
 		}
+	}
+
+	if($close){
 		fclose($handle);
-	}else{
-		echo("Could not open csv file: $file\n");
-		exit;
 	}
 	return $data;
 }
