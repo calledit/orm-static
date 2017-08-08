@@ -549,6 +549,44 @@ function DB_implode_in($Column, $implodes, $WhenEmpty = false){
 	return($MY_SQL_Handle->real_escape_string($Column).' IN ('.implode(', ', $implodes).')');
 }
 
+function csv_dump($data, $Split = ','){
+	$outstream = fopen("php://temp", 'r+');
+
+	//Get column names
+	$Keys = array();
+	foreach($data as $dataRow){
+		$pos = 0;
+		foreach($dataRow as $NameKey => $cell){
+			$Keys[$NameKey] = $pos;
+			$pos += 1;
+		}
+	}
+
+	if(count($Keys) != 0){
+		$KeysPrint = array_keys($Keys);
+		fputcsv($outstream, $KeysPrint, $Split, '"');
+	}
+
+	foreach($data as $dataRow){
+		$File_data = array();
+		foreach($Keys as $Key => $pos){
+			if(isset($dataRow[$Key])){
+				$File_data[] = $dataRow[$Key];
+			}else{
+				$File_data[] = '';
+			}
+		}
+		fputcsv($outstream, $File_data, $Split, '"');
+	}
+	rewind($outstream);
+	$csv = '';
+	while(!feof($outstream)){
+		$csv .= fgets($outstream);
+	}
+    fclose($outstream);
+    return $csv;
+
+
 function load_csv($file, $search_head = NULL, $separator = ';'){
 	$data = array();
 	//parse the price list file
