@@ -585,6 +585,7 @@ function csv_dump($data, $Split = ','){
 	}
     fclose($outstream);
     return $csv;
+}
 
 
 function load_csv($file, $search_head = NULL, $separator = ';'){
