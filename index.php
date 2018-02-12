@@ -9,6 +9,18 @@ if(!$MY_SQL_Handle){
 }
 $MY_SQL_Handle->set_charset('utf8');
 
+
+//make sure we dont have to care about ONLY_FULL_GROUP_BY
+$sql_mode = simple_DB_query('SELECT @@sql_mode');
+$modes = explode(',', $sql_mode[0]['.@@sql_mode']);
+
+foreach($modes AS $mdid => $mode){
+	if($mode == 'ONLY_FULL_GROUP_BY'){
+		unset($modes[$mdid]);
+	}
+}
+$simple_MY_SQL_Handle->query('set session sql_mode=\''.$simple_MY_SQL_Handle->real_escape_string(implode(',', $modes)).'\'');
+
 //Import object descriptors
 require_once("db_classes.php");
 
