@@ -345,7 +345,7 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 		`information_schema`.`KEY_COLUMN_USAGE`.`TABLE_SCHEMA` = "'.$DataBase.'" AND
 		`information_schema`.`KEY_COLUMN_USAGE`.`REFERENCED_TABLE_SCHEMA` IS NOT NULL');
 
-	$ReferencesTableCount = array();
+	$ReferencesTableCounts = array();
 	while($Reference = $References->fetch_assoc()){
 
 		$TableName = $Reference['TABLE_SCHEMA'].'/'.$Reference['TABLE_NAME'];
