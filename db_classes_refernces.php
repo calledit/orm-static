@@ -57,7 +57,23 @@ class DBObj {
 		return($ListOfRows);
 	}
 
-	//Draws a html table very usefull for debuging
+	//Fetches a list of objects from the databse based of some specified properties
+	public static function GetListByProperty($Properties){
+		global $MY_SQL_Handle;
+		$WhereStr = static::GenerateDBQuery($Properties, true);
+		$Result = $MY_SQL_Handle->query('SELECT * from `'.static::$_tableName.'` '.$WhereStr);
+		if(!$Result){
+			throw new DBSelectException("Data Base query Error: ".$MY_SQL_Handle->error);
+		}
+		$ListOfRows = array();
+		while(($data = $Result->fetch_array(MYSQLI_ASSOC))){
+			$ListOfRows[$data['_id']] = new static($data, false);
+		}
+		$Result->free();
+		return($ListOfRows);
+	}
+
+	//Draws a html table
 	public function HTMLTable(){
 		echo "\n<table class=\"table\">\n";
 		echo "	<thead>\n";
@@ -78,31 +94,6 @@ class DBObj {
 		}
 		echo "	</tbody>\n";
 		echo "</table>\n";
-	}
-
-	//tries to get single object if avalible
-	public static function GetObjByProperty($Properties){
-		$list = static::GetListByProperty($Properties);
-		if(count($list) > 0){
-			return array_shift($list);
-		}
-		return false;
-	}
-
-	//Fetches a list of objects from the databse based of some specified properties
-	public static function GetListByProperty($Properties){
-		global $MY_SQL_Handle;
-		$WhereStr = static::GenerateDBQuery($Properties, true);
-		$Result = $MY_SQL_Handle->query('SELECT * from `'.static::$_tableName.'` '.$WhereStr);
-		if(!$Result){
-			throw new DBSelectException("Data Base query Error: ".$MY_SQL_Handle->error);
-		}
-		$ListOfRows = array();
-		while(($data = $Result->fetch_array(MYSQLI_ASSOC))){
-			$ListOfRows[$data['_id']] = new static($data, false);
-		}
-		$Result->free();
-		return($ListOfRows);
 	}
 
 	public function SetVisual($VisualVal){
@@ -345,7 +336,8 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 		`information_schema`.`KEY_COLUMN_USAGE`.`TABLE_SCHEMA` = "'.$DataBase.'" AND
 		`information_schema`.`KEY_COLUMN_USAGE`.`REFERENCED_TABLE_SCHEMA` IS NOT NULL');
 
-	$ReferencesTableCounts = array();
+
+	$ReferencesTableCount = array();
 	while($Reference = $References->fetch_assoc()){
 
 		$TableName = $Reference['TABLE_SCHEMA'].'/'.$Reference['TABLE_NAME'];
@@ -371,7 +363,6 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 
 	$PHPCode = "<?php\n";
 	$ClassNames = array();
-	$TableInfo = array();
 
 	foreach($ClassTables AS $Table){
 		//Fetch Column info
@@ -381,9 +372,6 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 			$CollumnArray[] = $Collumn;
 		}
 		$Collumns->free();
-
-
-		//Could add name checking we have certain expectations on columns and tables such as them ending with an s and beeing valid php variables
 
 		$ClassName = ucfirst(strtolower($Table));
 		//Could use the Type of the db to ensure type integrity on the object
@@ -398,22 +386,16 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 		'public static $_tableName = \''.$Table."';\n";
 		"\tprivate ".'$_visualName'." = NULL;\n";
 		"\tpublic ".'$_refs'." = array();\n";
-		$table_info = array();
 		foreach($CollumnArray AS $Collumn){
 			if($Collumn['Field'] != '_id'){
 				$PhpClass .= "\tpublic $".$Collumn['Field'].";\n";
 			}
-			$column_name = $Collumn['Field'];
-			unset($Collumn['Field']);
-			$table_info[$column_name] = $Collumn;
 		}
-		$TableInfo[] = '\''.$Table.'\' => '.var_export($table_info, true);
 		$PhpClass .= "}\n\n";
 		$PHPCode .= $PhpClass;
 	}
 
 	$PHPCode .= '$TABLE_Classes = array('.implode(', ', $ClassNames).');'."\n";
-	$PHPCode .= '$TABLE_info = array('.implode(', ', $TableInfo).');'."\n";
 
 	$PHPCode .= '?'.">\n";
 	return($PHPCode);
@@ -434,77 +416,11 @@ function SaveDBClassesToFile($DataBase, $FileName, $MY_SQL_Handle){
 	}
 }
 
-//Helper for pivoting Object results
-/*
-DB_Result_Pivot(
-	RuseultTable = array of objects to pivot,
-	CollumName = collumn to get value from, (if used with CollumKeyName: true means use the array key as the value, false means get the entire object as the value)
-	[CollumKeyName] = the collumn to use as a a key in the result array
-	[DuplicateValues] = get more one value for each key in the result array
-
-	 if set to true, it will get the keys is the array
-)
-*/
-function DB_Result_Pivot($RuseultTable, $CollumName, $CollumKeyName = NULL, $DuplicateValues = false){
-	$ReturnArray = array();
-	if(!is_array($RuseultTable)){
-		throw new Exception('DB_Result_Pivot $RuseultTable is not an array');
-	}
-	if(isset($CollumKeyName)){
-		if($DuplicateValues){
-			if($CollumName === true){
-				foreach($RuseultTable AS $key => $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName][] = $key;
-				}
-			}else if($CollumName === false){
-				foreach($RuseultTable AS $key => $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName][] = $TableRow;
-				}
-			}else{
-				foreach($RuseultTable AS $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName][] = $TableRow->$CollumName;
-				}
-			}
-		}else{
-			if($CollumName === true){
-				foreach($RuseultTable AS $key => $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName] = $key;
-				}
-			}else if($CollumName === false){
-				foreach($RuseultTable AS $key => $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName] = $TableRow;
-				}
-			}else{
-				foreach($RuseultTable AS $TableRow){
-					$ReturnArray[$TableRow->$CollumKeyName] = $TableRow->$CollumName;
-				}
-			}
-		}
-	}else{
-		foreach($RuseultTable AS $TableRow){
-			$ReturnArray[] = $TableRow->$CollumName;
-		}
-	}
-	return($ReturnArray);
-}
-
-
-//Helper for pivoting arrays of arrays
-/*
-DB_Abstraction_Get_Collumn(
-	RuseultTable = array of arrays to pivot,
-	CollumName = collumn to get value from, (if used with CollumKeyName: true means use the array key as the value, false means get the entire row as the value)
-	[CollumKeyName] = the collumn to use as a a key in the result array
-	[DuplicateValues] = get more one value for each key in the result array
-
-	 if set to true, it will get the keys is the array
-)
-*/
+//Helper for pivoting results
 function DB_Abstraction_Get_Collumn($RuseultTable, $CollumName, $CollumKeyName = NULL, $DuplicateValues = false){
 	$ReturnArray = array();
-	if(!is_array($RuseultTable)){
+	if(!is_array($RuseultTable))
 		throw new Exception('DB_Abstraction_Get_Collumn $RuseultTable is not an array');
-	}
 	if(isset($CollumKeyName)){
 		if($DuplicateValues){
 			if($CollumName === true){
@@ -522,198 +438,21 @@ function DB_Abstraction_Get_Collumn($RuseultTable, $CollumName, $CollumKeyName =
 			}
 		}else{
 			if($CollumName === true){
-				foreach($RuseultTable AS $key => $TableRow){
+				foreach($RuseultTable AS $key => $TableRow)
 					$ReturnArray[$TableRow[$CollumKeyName]] = $key;
-				}
 			}else if($CollumName === false){
-				foreach($RuseultTable AS $key => $TableRow){
+				foreach($RuseultTable AS $key => $TableRow)
 					$ReturnArray[$TableRow[$CollumKeyName]] = $TableRow;
-				}
 			}else{
-				foreach($RuseultTable AS $TableRow){
+				foreach($RuseultTable AS $TableRow)
 					$ReturnArray[$TableRow[$CollumKeyName]] = $TableRow[$CollumName];
-				}
 			}
 		}
 	}else{
-		foreach($RuseultTable AS $TableRow){
+		foreach($RuseultTable AS $TableRow)
 			$ReturnArray[] = $TableRow[$CollumName];
-		}
 	}
 	return($ReturnArray);
-}
-
-function DB_implode_in($Column, $implodes, $WhenEmpty = false){
-	global $MY_SQL_Handle;
-	if(!isset($implodes) || count($implodes) == 0){
-		if($WhenEmpty){
-			return('true');
-		}else{
-			return('false');
-		}
-	}
-	foreach($implodes AS $key => $Value){
-		$implodes[$key] = DB_Esc($Value);
-	}
-
-	return($MY_SQL_Handle->real_escape_string($Column).' IN ('.implode(', ', $implodes).')');
-}
-
-function csv_dump($data, $Split = ','){
-	$outstream = fopen("php://temp", 'r+');
-
-	//Get column names
-	$Keys = array();
-	foreach($data as $dataRow){
-		$pos = 0;
-		foreach($dataRow as $NameKey => $cell){
-			$Keys[$NameKey] = $pos;
-			$pos += 1;
-		}
-	}
-
-	if(count($Keys) != 0){
-		$KeysPrint = array_keys($Keys);
-		fputcsv($outstream, $KeysPrint, $Split, '"');
-	}
-
-	foreach($data as $dataRow){
-		$File_data = array();
-		foreach($Keys as $Key => $pos){
-			if(isset($dataRow[$Key])){
-				$File_data[] = $dataRow[$Key];
-			}else{
-				$File_data[] = '';
-			}
-		}
-		fputcsv($outstream, $File_data, $Split, '"');
-	}
-	rewind($outstream);
-	$csv = '';
-	while(!feof($outstream)){
-		$csv .= fgets($outstream);
-	}
-    fclose($outstream);
-    return $csv;
-}
-
-
-function load_csv($file, $search_head = NULL, $separator = ';'){
-	$data = array();
-	//parse the price list file
-	$close = false;
-	if(is_string($file)){
-		if(($handle = fopen($file, "r")) !== FALSE){
-			$close = true;
-		}else{
-			throw Exception("Could not open csv file: $file\n");
-		}
-	}else{
-		$handle = $file;
-	}
-	$found_column_headers = false;
-	$headers = array();
-	while (($line = fgetcsv($handle, 0, $separator)) !== FALSE) {
-		//Skip the first couple of useles lines and find the headers
-		if(!$found_column_headers){
-			$use_as_head = false;
-			if(isset($search_head)){
-				$num_matches = 0;
-				foreach($line AS $val){
-					$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
-					if(in_array($val, $search_head)){
-						$num_matches += 1;
-					}
-				}
-				if(count($search_head) == $num_matches){
-					$use_as_head = true;
-				}
-			}else{
-				$use_as_head = true;
-			}
-
-			if($use_as_head){
-				$found_column_headers = true;
-				foreach($line AS $c => $val) {
-					$val = preg_replace('/\s/', '_', preg_replace('/[^[:print:]]/', '', $val));
-					$headers[$val] = $c;
-				}
-			}
-		}else if($found_column_headers){//We found the headers lets start taking the data
-			$dline = array();
-			foreach($headers AS $name => $id){
-				$dline[$name] = $line[$headers[$name]];
-			}
-			$data[] = $dline;
-		}
-	}
-
-	if($close){
-		fclose($handle);
-	}
-	return $data;
-}
-
-function Array_Table($arr){
-	if(count($arr) == 0){
-		throw new Exception("No values in array");
-	}
-	echo('<table border="1">');
-
-	//Print The Keys
-	$First = reset($arr);
-	echo("<tr>");
-	foreach($First as $key => $val){
-		echo("<th>" . $key . "</th>");
-	}
-	echo("</tr>\n");
-
-	//Print all values
-	foreach($arr as $Collumn => $Collumn_val){
-		echo("<tr>");
-		foreach($Collumn_val as $key => $val){
-			echo("<td>" . $val . "</td>");
-		}
-		echo("</tr>\n");
-	}
-	echo('</table>');
-}
-
-
-function simple_DB_query($QueryStr){
-	global $MY_SQL_Handle;
-	$Result = $MY_SQL_Handle->query($QueryStr);
-	if(!$Result){
-		throw new Exception("Data Base query Error: ".$MY_SQL_Handle->error);
-	}
-
-	//Map query result Columns to object fields
-	$CollumnMetas = $Result->fetch_fields();
-	$ColumnNames = array();
-	foreach($CollumnMetas AS $CollumnNum => $CollumnMeta){
-		$ColumnNames[$CollumnNum] = $CollumnMeta->table.'.'.$CollumnMeta->name;
-	}
-
-	$rows = array();
-	while(($ResultRow = $Result->fetch_row())){
-		$rows[] = array_combine($ColumnNames, $ResultRow);
-	}
-
-	$Result->free();
-	return($rows);
-}
-
-//Selects certain columns from a db result set
-function DB_collumn_select($RuseultTable, $columns){
-	$ret = array();
-	foreach($RuseultTable AS $_id => $row){
-		$limRow = array();
-		foreach($columns AS $column){
-			$limRow[$column] = $row->$column;
-		}
-		$ret[$_id] = $limRow;
-	}
-	return $ret;
 }
 
 ?>
