@@ -237,8 +237,8 @@ class QUERYview {
 		}
 
 		foreach($this->column_metas AS $num => $column){
-			$column_id = $column->orgtable.".".$column->name;
-			if($column->orgtable == ""){
+			$column_id = $column->table.".".$column->name;
+			if($column->table == ""){
 				$column_id = $column->name;
 			}
 			$this->col2num[$column_id] = $num;
