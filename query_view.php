@@ -318,6 +318,9 @@ class QUERYview {
 					unset($this->column_metas[$num]->distinct);
 				}
 			}
+			if(isset($this->column_metas[$num]->distinct)){
+				asort($this->column_metas[$num]->distinct, SORT_REGULAR);
+			}
 		}
 		$_SESSION['query_view'][$this->viewIdentifier]['column_metas'] = $this->column_metas;
 		$_SESSION['query_view'][$this->viewIdentifier]['estimated_num_rows'] = $this->estimated_num_rows;
