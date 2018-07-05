@@ -473,6 +473,7 @@ if(isset($this->orders[$column_name])){
 		}
 		echo "			</tr>\n";
 		echo "	</thead>\n";
+		echo '<input type="submit" style="display:none"/>';
 		echo "	<tbody>\n";
 		foreach($this->rows AS $query_row){
 			echo "		<tr>";

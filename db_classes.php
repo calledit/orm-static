@@ -405,6 +405,11 @@ function GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle){
 			}
 			$column_name = $Collumn['Field'];
 			unset($Collumn['Field']);
+			if($Collumn['Null'] ==  'NO'){
+				$Collumn['Null'] = false;
+			}else{
+				$Collumn['Null'] = true;
+			}
 			$table_info[$column_name] = $Collumn;
 		}
 		$TableInfo[] = '\''.$Table.'\' => '.var_export($table_info, true);
