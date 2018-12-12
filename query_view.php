@@ -160,6 +160,10 @@ class QUERYview {
 	public function handle_exec(){
 		global $MY_SQL_Handle;
 
+		//Load the column metadata
+		$this->load_column_metadata();
+		//var_dump($this->column_metas);
+
 		$filtsql = explode('GROUP BY', $this->filtered_sql_query);
 		if(count($this->filters) != 0){
 			$filter_sql = array();
@@ -173,6 +177,9 @@ class QUERYview {
 					}
 				}
 				$ImplodeJoiner = ' OR ';
+				//if($this->column_metas[$this->col2num[$column]]->multiple){
+					//$ImplodeJoiner = ' AND ';
+				//}
 				if(isset($this->invert[$column]) && $this->invert[$column]){
 					$ImplodeJoiner = ' AND ';
 					foreach($filter_or_sql AS $n => $comparator){
@@ -216,7 +223,6 @@ class QUERYview {
 		if(!$Result){
 			throw new Exception("Data Base query Error: ".$MY_SQL_Handle->error);
 		}
-		$this->column_metas = $Result->fetch_fields();
 		while(($ResultRow = $Result->fetch_row())){
 			$this->rows[] = $ResultRow;
 		}
@@ -237,12 +243,7 @@ class QUERYview {
 		}
 
 		foreach($this->column_metas AS $num => $column){
-			$column_id = $column->table.".".$column->name;
-			if($column->table == ""){
-				$column_id = $column->name;
-			}
-			$this->col2num[$column_id] = $num;
-			$this->num2col[$num] = $column_id;
+			$column_id  = $this->num2col[$num];
 			if($doautovisible){
 				//If the column name ends with _id we asume it is a system id
 				if(substr($column->name, -3) != '_id'){
@@ -251,7 +252,6 @@ class QUERYview {
 			}
 		}
 
-		$this->distinct();
 		if($this->export){
 			header('Content-Type: text/csv; charset=utf-8');
 			header('Content-Disposition: attachment; filename="export.csv"');
@@ -261,13 +261,15 @@ class QUERYview {
 		}
 	}
 
-	//Gets all the posible values for all collumns in the table
-	public function distinct(){
+	//Gets all the posible values for all collumns in the table and loads column metadata
+	public function load_column_metadata(){
 		global $MY_SQL_Handle;
 
 		//get the cached result if it is avalible
 		if(isset($_SESSION['query_view'][$this->viewIdentifier]['column_metas'])){
 			$this->column_metas = $_SESSION['query_view'][$this->viewIdentifier]['column_metas'];
+			$this->col2num = $_SESSION['query_view'][$this->viewIdentifier]['col2num'];
+			$this->num2col = $_SESSION['query_view'][$this->viewIdentifier]['num2col'];
 			$this->estimated_num_rows = $_SESSION['query_view'][$this->viewIdentifier]['estimated_num_rows'];
 			return;
 		}
@@ -275,8 +277,18 @@ class QUERYview {
 		if(!$Result){
 			throw new Exception("Data Base query Error: ".$MY_SQL_Handle->error);
 		}
+
+		$this->column_metas = $Result->fetch_fields();
+
 		//Initiate distinct array
 		foreach($this->column_metas AS $id => $column){
+			$column_id = $column->table.".".$column->name;
+			if($column->table == ""){
+				$column_id = $column->name;
+			}
+			$this->col2num[$column_id] = $id;
+			$this->num2col[$id] = $column_id;
+
 			$this->column_metas[$id]->distinct = array();
 			$this->column_metas[$id]->multiple = false;
 		}
@@ -326,6 +338,8 @@ class QUERYview {
 		}
 		$_SESSION['query_view'][$this->viewIdentifier]['column_metas'] = $this->column_metas;
 		$_SESSION['query_view'][$this->viewIdentifier]['estimated_num_rows'] = $this->estimated_num_rows;
+		$_SESSION['query_view'][$this->viewIdentifier]['col2num'] = $this->col2num;
+		$_SESSION['query_view'][$this->viewIdentifier]['num2col'] = $this->num2col;
 	}
 
 	//decides what collumns to show and their GUI name
@@ -407,7 +421,7 @@ if(!isset($column->distinct)){
 <?php
 }else{
 	$multi = '';
-	if($this->column_metas[$this->col2num[$column_name]]->multiple || isset($this->filters[$column_name]) && count($this->filters[$column_name]) > 1){
+	if(isset($this->filters[$column_name]) && count($this->filters[$column_name]) > 1 || $this->column_metas[$this->col2num[$column_name]]->multiple){
 		$multi = 'multiple';
 	}
 ?>
