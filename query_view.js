@@ -28,6 +28,18 @@ function invert(what_str){
 	filter_update(invertcheck[0]);
 	return false;
 }
+function and(what_str){
+	var andcheck = document.getElementsByName(what_str);
+	//alert("updated filter");
+	var checked = andcheck[0].checked;
+	if(checked){
+		andcheck[0].checked = false;
+	}else{
+		andcheck[0].checked = true;
+	}
+	filter_update(andcheck[0]);
+	return false;
+}
 function filter_update(what){
 
 	//We disable any fields that are not active to make the url a bit shorter
