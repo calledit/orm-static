@@ -191,6 +191,9 @@ class QUERYview {
 				}
 				if(isset($this->invert[$column]) && $this->invert[$column]){
 					$ImplodeJoiner = ' AND ';
+					if(isset($this->and[$column]) && $this->and[$column]){
+						$ImplodeJoiner = ' OR ';
+					}
 					foreach($filter_or_sql AS $n => $comparator){
 						$filter_or_sql[$n] = '!('.$comparator.')';
 					}
