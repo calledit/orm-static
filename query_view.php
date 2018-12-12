@@ -291,7 +291,7 @@ class QUERYview {
 					$val = $this->col_map_distinct[$column_name]($value);
 				}
 				if(is_array($val)){
-					$this->column_metas[$id]->multiple = true;
+					$this->column_metas[$num]->multiple = true;
 					foreach($val AS $maped_val){
 						$this->column_metas[$num]->distinct[$maped_val] = $maped_val;
 					}
