@@ -23,6 +23,9 @@ class QUERYview {
 	//If the selection is to be inverted
 	public $invert = array();
 
+	//If the selection is to be queryied with and instead of or
+	public $and = array();
+
 	//The columns we will filter in and the value we want to filter
 	public $filters = array();
 	//are we trying to create an export file
@@ -120,6 +123,13 @@ class QUERYview {
 					}
 				}
 			}
+			if(isset($_GET[$this->viewIdentifier]['and'])){
+				foreach($_GET[$this->viewIdentifier]['and'] AS $column => $and){
+					if($and == 'and'){
+						$this->and[$column] = true;
+					}
+				}
+			}
 			if(isset($_GET[$this->viewIdentifier]['order'])){
 				foreach($_GET[$this->viewIdentifier]['order'] AS $column => $direction){
 					if($direction == 'ASC' || $direction == 'DESC'){
@@ -162,7 +172,6 @@ class QUERYview {
 
 		//Load the column metadata
 		$this->load_column_metadata();
-		//var_dump($this->column_metas);
 
 		$filtsql = explode('GROUP BY', $this->filtered_sql_query);
 		if(count($this->filters) != 0){
@@ -177,9 +186,9 @@ class QUERYview {
 					}
 				}
 				$ImplodeJoiner = ' OR ';
-				//if($this->column_metas[$this->col2num[$column]]->multiple){
-					//$ImplodeJoiner = ' AND ';
-				//}
+				if(isset($this->and[$column]) && $this->and[$column]){
+					$ImplodeJoiner = ' AND ';
+				}
 				if(isset($this->invert[$column]) && $this->invert[$column]){
 					$ImplodeJoiner = ' AND ';
 					foreach($filter_or_sql AS $n => $comparator){
@@ -408,6 +417,10 @@ class QUERYview {
 				if(isset($this->invert[$column_name]) && $this->invert[$column_name]){
 					$invert = true;
 				}
+				$and = false;
+				if(isset($this->and[$column_name]) && $this->and[$column_name]){
+					$and = true;
+				}
 				echo "					<th>\n";
 ?>
 						<div class="input-group">
@@ -436,6 +449,14 @@ if(!isset($column->distinct)){
 	}
 ?>
 							</select>
+<?php
+}
+
+if($this->column_metas[$this->col2num[$column_name]]->multiple){
+?>
+							<span onclick="return and('<?= $this->viewIdentifier.'[and]['.$column_name.']' ?>')" class="input-group-addon">
+								<span <?= $and?'style="color:red;"':'' ?> class="glyphicon glyphicon-minus"></span>
+							</span>
 <?php
 }
 
@@ -473,6 +494,10 @@ if(isset($this->orders[$column_name])){
 									<input name="<?= $this->viewIdentifier.'[invert]['.$column_name.']' ?>" value="inv" type="checkbox" <?= $invert?'checked':'' ?>>
 								</label>
 							</div>
+							<div class="checkbox">
+								<label>
+									<input name="<?= $this->viewIdentifier.'[and]['.$column_name.']' ?>" value="and" type="checkbox" <?= $and?'checked':'' ?>>
+								</label>
 							<label class="radio-inline">
 								<input type="radio" name="<?= $this->viewIdentifier.'[order]['.$column_name.']' ?>" value="NO" <?= ($order == 'NO')?'checked':'' ?> onchange="filter_update(this);">
 							</label>
@@ -513,3 +538,4 @@ if(isset($this->orders[$column_name])){
 		echo "		</form>\n";
 	}
 }
+
