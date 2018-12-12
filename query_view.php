@@ -278,6 +278,7 @@ class QUERYview {
 		//Initiate distinct array
 		foreach($this->column_metas AS $id => $column){
 			$this->column_metas[$id]->distinct = array();
+			$this->column_metas[$id]->multiple = false;
 		}
 
 		//Save each distinct value
@@ -290,6 +291,7 @@ class QUERYview {
 					$val = $this->col_map_distinct[$column_name]($value);
 				}
 				if(is_array($val)){
+					$this->column_metas[$id]->multiple = true;
 					foreach($val AS $maped_val){
 						$this->column_metas[$num]->distinct[$maped_val] = $maped_val;
 					}
@@ -405,7 +407,7 @@ if(!isset($column->distinct)){
 <?php
 }else{
 	$multi = '';
-	if(isset($this->filters[$column_name]) && count($this->filters[$column_name]) > 1){
+	if($this->column_metas[$this->col2num[$column_name]]->multiple || isset($this->filters[$column_name]) && count($this->filters[$column_name]) > 1){
 		$multi = 'multiple';
 	}
 ?>
