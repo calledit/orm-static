@@ -3,12 +3,14 @@ ini_set('display_errors', 1);
 
 $DatabaseName = 'PickPack';
 /*Connect to the database*/
-$MY_SQL_Handle = new mysqli($SQL_host, $SQL_user, $SQL_pass, $mysql_db_name);
+$MY_SQL_Handle = new mysqli($SQL_host, $SQL_user, $SQL_pass, $DatabaseName);
 if(!$MY_SQL_Handle){
 	throw new Exception('MY SQL Database connection failed');
 }
 $MY_SQL_Handle->set_charset('utf8');
 
+//Import object descriptors
+require_once("db_classes.php");
 
 //make sure we dont have to care about ONLY_FULL_GROUP_BY
 $sql_mode = simple_DB_query('SELECT @@sql_mode');
@@ -19,10 +21,9 @@ foreach($modes AS $mdid => $mode){
 		unset($modes[$mdid]);
 	}
 }
-$simple_MY_SQL_Handle->query('set session sql_mode=\''.$simple_MY_SQL_Handle->real_escape_string(implode(',', $modes)).'\'');
+$MY_SQL_Handle->query('set session sql_mode=\''.$MY_SQL_Handle->real_escape_string(implode(',', $modes)).'\'');
 
-//Import object descriptors
-require_once("db_classes.php");
+
 
 //Create static object description
 SaveDBClassesToFile($DatabaseName, 'generated_db_classes.php', $MY_SQL_Handle);
