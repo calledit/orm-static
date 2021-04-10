@@ -1,7 +1,10 @@
 <?php
 ini_set('display_errors', 1);
 
-$DatabaseName = 'PickPack';
+$DatabaseName = 'words';
+$SQL_user = 'words';
+$SQL_pass = '8lj9R1C1IE711nWN';
+$SQL_host = 'localhost';
 /*Connect to the database*/
 $MY_SQL_Handle = new mysqli($SQL_host, $SQL_user, $SQL_pass, $DatabaseName);
 if(!$MY_SQL_Handle){
@@ -11,6 +14,7 @@ $MY_SQL_Handle->set_charset('utf8');
 
 //Import object descriptors
 require_once("db_classes.php");
+require_once("query_view.php");
 
 //make sure we dont have to care about ONLY_FULL_GROUP_BY
 $sql_mode = simple_DB_query('SELECT @@sql_mode');
@@ -23,41 +27,78 @@ foreach($modes AS $mdid => $mode){
 }
 $MY_SQL_Handle->query('set session sql_mode=\''.$MY_SQL_Handle->real_escape_string(implode(',', $modes)).'\'');
 
+$orm_static = false;
+if(!$orm_static){
+	
+	//query view uses sessions for chaching
+	session_start();
 
+	$wordviewer = new QUERYview('?a=1&b=2', 
+'SELECT * FROM `dictionary_word`
+LEFT OUTER JOIN `dictionary_word_translation` ON `dictionary_word`.`_id` = `dictionary_word_translation`.`dictionary_word_id`
+LEFT OUTER JOIN `dictionary_word_synonym` ON `dictionary_word`.`_id` = `dictionary_word_synonym`.`dictionary_word_id`
+'
+);
+
+//Alter the $wordviewer
+
+$wordviewer->handle_exec();
+
+?>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="query_view.js"></script>
+<?php
+
+
+$wordviewer->render();
+
+}else{
 
 //Create static object description
-SaveDBClassesToFile($DatabaseName, 'generated_db_classes.php', $MY_SQL_Handle);
+if(!file_exists('generated_db_classes.php')){
+	SaveDBClassesToFile($DatabaseName, 'generated_db_classes.php', $MY_SQL_Handle);
+}
 
 //Import the generated classes
 require_once("generated_db_classes.php");
 
 
 //Simple Example usage query
-$DeliverysToPartners = DB_query(
-	'SELECT `deliveries`.*, `bundle_invoices`.*, `delivery_partners`.* FROM `delivery_partners`
-		INNER JOIN `deliveries` ON `deliveries`.`_id` = `delivery_partners`.`Delivery`
-		LEFT OUTER JOIN `delivery_invoices` ON `deliveries`.`_id` = `delivery_invoices`.`Delivery`
-		LEFT OUTER JOIN `bundle_invoices` ON `delivery_invoices`.`InvoiceID` = `bundle_invoices`.`_id`
-	WHERE
-		`deliveries`.`Season` = '.DB_Esc(201401).' AND
-		`delivery_partners`.`Partner` = '.DB_Esc(8)
-		);
+$Words_translations_and_synonyms = DB_query(
+'SELECT * FROM `dictionary_word`
+LEFT OUTER JOIN `dictionary_word_translation` ON `dictionary_word`.`_id` = `dictionary_word_translation`.`dictionary_word_id`
+LEFT OUTER JOIN `dictionary_word_synonym` ON `dictionary_word`.`_id` = `dictionary_word_synonym`.`dictionary_word_id`
+LIMIT 1000'
+);
 
 //Foreach partner that is to have a delivery
-foreach($DeliverysToPartners['delivery_partners'] AS $Partner){
+foreach($Words_translations_and_synonyms['dictionary_word'] AS $Word){
 	
 	//get The delivery that the partner was connected to
-	$WhichDelivery = $Partner->RefRow('deliveries', $DeliverysToPartners);
+	$AllSynonyms = $Word->RefRow('dictionary_word_synonym', $Words_translations_and_synonyms, true);
 	//get the Invoices the delivery was connected to 
-	$WhichInvoices = $WhichDelivery->RefRow('bundle_invoices', $DeliverysToPartners, true);
+	$AllTranslations = $Word->RefRow('dictionary_word_translation', $Words_translations_and_synonyms, true);
 
-	echo("<div>");
-	echo("Partner: ".$Partner->Partner."\n");
-	echo("Has folowing invoices:\n");
-	
-	foreach($WhichInvoices AS $Invoice){
-		echo("Invoice: ".$Invoice->Name."\n");
+	echo("<div style=\"border: 1px solid black;\">\n");
+	echo("<h3>". $Word->value."</h3>\n");
+	//var_dump($Word);
+	echo("<p>\n");
+	echo("Synonyms:\n");
+	foreach($AllSynonyms AS $synonym){
+		echo($synonym->value.",\n");
 	}
-	echo("</div>");
+	echo("</p>\n");
+	//echo("Partner: ".$Partner->Partner."\n");
+	echo("<p>\n");
+	echo("\nTranslations:\n");
+	
+	foreach($AllTranslations AS $translation){
+		echo($translation->value.",\n");
+	}
+	echo("</p>\n");
+	echo("</div>\n\n");
 }
 
+}

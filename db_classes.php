@@ -433,10 +433,8 @@ function SaveDBClassesToFile($DataBase, $FileName, $MY_SQL_Handle){
 	}
 	$Tables->free();
 
-	if(file_exists($FileName)){
-		$PHPCode = GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle);
-		file_put_contents($FileName, $PHPCode);
-	}
+	$PHPCode = GenerateDBClasses($DataBase, $ClassTables, $MY_SQL_Handle);
+	file_put_contents($FileName, $PHPCode);
 }
 
 //Helper for pivoting Object results
